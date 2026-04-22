@@ -1,0 +1,146 @@
+================================================================================
+GEORUTA · PLAN MAESTRO DE DESARROLLO (inicio → fin)
+Ruta Sayán – Huacho · Flutter + Django + PostgreSQL
+================================================================================
+
+LEYENDA
+  [x] hecho     [~] en curso     [ ] pendiente
+  (BE) backend Django   (FE) frontend Flutter   (DB) base de datos   (OPS) operación
+
+
+================================================================================
+FASE 0 · SETUP BASE                                                         [x]
+================================================================================
+[x] 0.1  Stack definido: Flutter 3.41 + Django 5.1 + DRF + SimpleJWT + PostgreSQL
+[x] 0.2  (FE) Proyecto Flutter creado (web + android + ios + windows)
+[x] 0.3  (FE) Dependencias: riverpod, go_router, dio, flutter_secure_storage,
+         flutter_map, latlong2, intl
+[x] 0.4  (FE) Paleta + tema oscuro GeoRuta (#1E90FF / #0A0A0A)
+[x] 0.5  (FE) Assets (logo, ícono)
+[x] 0.6  (BE) venv + requirements + manage.py
+[x] 0.7  (BE) Postgres local + .env + settings con dotenv
+[x] 0.8  (BE) CORS para Flutter web (regex localhost:*)
+
+
+================================================================================
+FASE 1 · AUTENTICACIÓN                                                      [x]
+================================================================================
+[x] 1.1  (BE) Modelo User custom (UUID, telefono USERNAME_FIELD, email opcional,
+         role PASAJERO/CONDUCTOR/ADMIN, estado)
+[x] 1.2  (BE) Endpoints /api/auth/register/ /login/ /refresh/ /me/
+[x] 1.3  (FE) TokenStorage seguro (flutter_secure_storage)
+[x] 1.4  (FE) ApiClient con Dio + interceptor auto-refresh en 401
+[x] 1.5  (FE) AuthRepository + AuthController (Riverpod + sealed state)
+[x] 1.6  (FE) LoginScreen + RegisterScreen + SplashScreen + HomeScreen
+[x] 1.7  (FE) go_router con guard y redirect por AuthState
+
+
+================================================================================
+FASE 2 · CATÁLOGO DE RUTAS Y VIAJES                                         [~]
+================================================================================
+[x] 2.1  (BE) App routes: Ruta, Paradero, RutaParadero, TarifaTramo
+[x] 2.2  (BE) Admin + seed (Sayán–Huacho, 4 paraderos, 6 tarifas a S/8)
+[x] 2.3  (BE) App fleet: Vehiculo (capacidad 10) + Conductor
+[x] 2.4  (BE) App trips: Horario + Viaje (PROGRAMADO/EN_CURSO/FIN/CANCELADO)
+[x] 2.5  (BE) Endpoints GET /api/routes/  y  GET /api/trips/search/
+[~] 2.6  (FE) Modelos Ruta/Paradero/Viaje + TripsRepository + TripsController
+[ ] 2.7  (FE) Pantalla "Buscar viaje": dropdown ruta, origen/destino, date picker
+[ ] 2.8  (FE) Lista de resultados (tarjeta de viaje: hora, asientos libres, tarifa)
+[ ] 2.9  (FE) Ruta /search en router + botón desde Home
+[ ] 2.10 (BE) migrate trips + crear Vehiculo + Viaje de prueba en /admin/
+
+
+================================================================================
+FASE 3 · COMPRA DE BOLETOS                                                  [ ]
+================================================================================
+[ ] 3.1  (BE) App tickets: Reserva, Boleto, Asiento (1..10 por vehículo)
+[ ] 3.2  (BE) Endpoint POST /api/trips/{id}/reservar/  (lock de asiento + TTL 10 min)
+[ ] 3.3  (BE) Endpoint POST /api/reservas/{id}/confirmar/  (genera boleto + QR token)
+[ ] 3.4  (BE) GET /api/reservas/mis/  y  /api/boletos/mis/
+[ ] 3.5  (BE) Regla: descuenta asientos_disponibles en Viaje al confirmar
+[ ] 3.6  (FE) Pantalla detalle de viaje → selección de asiento (grid 10 asientos)
+[ ] 3.7  (FE) Pantalla resumen + confirmar (por ahora pago simulado)
+[ ] 3.8  (FE) Pantalla "Mis boletos" con QR (paquete qr_flutter)
+[ ] 3.9  (FE) Pull-to-refresh + manejo de expiración de reserva
+
+
+================================================================================
+FASE 4 · GPS Y APP DEL CONDUCTOR                                            [ ]
+================================================================================
+[ ] 4.1  (BE) App tracking: PosicionVehiculo (viaje, lat, lon, velocidad, ts)
+[ ] 4.2  (BE) Endpoint POST /api/tracking/ping/  (solo rol CONDUCTOR)
+[ ] 4.3  (BE) GET /api/viajes/{id}/tracking/  (última posición + histórico corto)
+[ ] 4.4  (FE) Gate por rol: HomePasajero / HomeConductor
+[ ] 4.5  (FE-Conductor) Lista de mis viajes asignados
+[ ] 4.6  (FE-Conductor) Iniciar viaje → envío periódico de geolocator (cada 10 s)
+[ ] 4.7  (FE-Conductor) Escáner QR para validar boletos (mobile_scanner)
+[ ] 4.8  (FE-Pasajero) Mapa en vivo del viaje con flutter_map + marker animado
+
+
+================================================================================
+FASE 5 · PAGOS REALES                                                       [ ]
+================================================================================
+[ ] 5.1  Elección de pasarela (Culqi / MercadoPago / Niubiz)
+[ ] 5.2  (BE) Webhook /api/pagos/webhook/ + modelo Pago (estado, referencia)
+[ ] 5.3  (BE) Endpoint POST /api/reservas/{id}/pagar/  → devuelve intent/checkout
+[ ] 5.4  (FE) Integración SDK/WebView según pasarela
+[ ] 5.5  Pruebas de sandbox + flujo de reembolso básico
+[ ] 5.6  Confirmación automática del boleto al recibir webhook "approved"
+
+
+================================================================================
+FASE 6 · DESCUENTOS Y FIDELIZACIÓN                                          [ ]
+================================================================================
+Cap global del 7% del ingreso neto (según plan financiero).
+
+[ ] 6.1  (BE) App promos: Promocion, Cupon, UsoPromocion
+[ ] 6.2  Bienvenida: S/1 de descuento en el 1er viaje
+[ ] 6.3  Lealtad: cada 5 viajes pagados → viaje gratis o 50% off
+[ ] 6.4  Referidos: código por usuario; recompensa al amigo + al referente
+[ ] 6.5  (BE) Motor de descuentos aplicable al calcular tarifa final
+[ ] 6.6  (BE) Guardrail: no exceder 7% del ingreso mensual (bloqueo si se excede)
+[ ] 6.7  (FE) Pantalla "Mis beneficios" + aplicación de cupón en checkout
+
+
+================================================================================
+FASE 7 · PANEL ADMIN                                                        [ ]
+================================================================================
+[ ] 7.1  Decidir: Django admin extendido vs. panel Flutter web dedicado
+[ ] 7.2  Gestión rutas, paraderos, tarifas
+[ ] 7.3  Gestión vehículos, conductores (alta/baja, licencias)
+[ ] 7.4  Programar viajes (masivo por horario)
+[ ] 7.5  Dashboard: ventas diarias, ocupación, cap de descuentos, ingresos
+[ ] 7.6  Exportación CSV/Excel
+
+
+================================================================================
+FASE 8 · CALIDAD, DEPLOY Y OPERACIÓN                                        [ ]
+================================================================================
+[ ] 8.1  Tests backend (pytest-django) en endpoints críticos de compra
+[ ] 8.2  Tests widget Flutter (login, search, compra)
+[ ] 8.3  (OPS) Dockerfile backend + docker-compose (web + db)
+[ ] 8.4  (OPS) Hosting: Railway/Render/VPS + Postgres gestionado
+[ ] 8.5  (OPS) Dominio + HTTPS + variables de entorno de prod
+[ ] 8.6  (OPS) Build Flutter web → hosting estático (Vercel/Netlify)
+[ ] 8.7  (OPS) Firma Android + Play Store (cerrado interno primero)
+[ ] 8.8  (OPS) Monitoreo: Sentry (FE+BE) + logs estructurados
+[ ] 8.9  (OPS) Backups de Postgres + rotación
+[ ] 8.10 Roadmap iOS cuando haya Mac
+
+
+================================================================================
+CONVENCIONES DE TRABAJO
+================================================================================
+· Entrega incremental: terminamos una sub-fase → confirmamos → siguiente.
+· Cada fase finaliza con commit + push a github.com/ProTady/georuta.
+· Nada de secretos en git: .env sólo local; .env.example sí versionado.
+· Migraciones siempre generadas y commiteadas antes de avanzar.
+· Dev URLs: web → 127.0.0.1:8000 · android emu → 10.0.2.2:8000.
+
+================================================================================
+ESTADO ACTUAL (a 2026-04-22)
+================================================================================
+Último hito: Fase 2.6 en curso (modelos FE + repositorio + controller).
+Siguiente paso inmediato: terminar TripsController, armar la pantalla de búsqueda
+y listado de resultados, luego migrar trips y cargar Viaje de prueba.
+================================================================================

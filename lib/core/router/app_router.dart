@@ -7,6 +7,7 @@ import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/splash/presentation/splash_screen.dart';
+import '../../features/trips/presentation/trip_search_screen.dart';
 
 class AppRoutes {
   AppRoutes._();
@@ -14,6 +15,7 @@ class AppRoutes {
   static const login = '/login';
   static const register = '/register';
   static const home = '/home';
+  static const search = '/search';
 }
 
 /// Refresca go_router cuando cambia el AuthState en Riverpod.
@@ -68,6 +70,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.home,
         builder: (ctx, state) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.search,
+        builder: (ctx, state) => const TripSearchScreen(),
       ),
     ],
   );

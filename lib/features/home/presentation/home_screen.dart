@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../auth/application/auth_controller.dart';
 
@@ -73,9 +75,10 @@ class HomeScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Próximamente: búsqueda de viajes Sayán – Huacho (Fase 3).',
-              style: TextStyle(color: AppColors.textSecondary),
+            ElevatedButton.icon(
+              onPressed: () => context.push(AppRoutes.search),
+              icon: const Icon(Icons.search),
+              label: const Text('Buscar viaje'),
             ),
           ],
         ),
