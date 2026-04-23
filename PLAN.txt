@@ -185,6 +185,19 @@ en el momento, para no perderlo. Se revisa antes de iniciar cada nueva fase.
   también compra viajes en su tiempo libre, conviene multi-rol (many-to-many
   con Roles). Revisitar en Fase 4.
 
+[PENDIENTE]  Viaje.asientos_disponibles no refleja reservas pendientes
+  El campo solo se descuenta cuando la reserva se CONFIRMA (Fase 3b). Mientras
+  hay reservas en estado PENDIENTE, la búsqueda de viajes sigue mostrando
+  asientos como disponibles aunque estén bloqueados temporalmente. Como el TTL
+  es 10 min, es aceptable para MVP. En Fase 5 (pagos reales) considerar:
+  contar asientos libres dinámicamente (capacidad − vendidos − reservados
+  vigentes) en vez de un campo cacheado, o introducir un job que recompute.
+
+[PENDIENTE]  Job periódico para expirar reservas
+  Hoy se marcan como EXPIRADAs solo cuando alguien consulta el detalle del
+  viaje o el endpoint de confirmar. Agregar management command o celery beat
+  que corra cada minuto y limpie reservas vencidas.
+
 [PENDIENTE]  Validar formato teléfono peruano
   RegisterSerializer acepta cualquier string. Agregar validación +51 9XX
   XXX XXX (9 dígitos) antes de producción.

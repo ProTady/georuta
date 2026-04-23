@@ -29,6 +29,9 @@ dependencies:
   flutter_map: ^7.0.2
   latlong2: ^0.9.1
 
+  # QR para boletos
+  qr_flutter: ^4.1.0
+
   # Misc
   intl: ^0.20.2
 

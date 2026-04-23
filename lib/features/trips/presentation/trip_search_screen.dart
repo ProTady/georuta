@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../tickets/application/tickets_controllers.dart';
 import '../application/trips_controller.dart';
 import '../data/models/paradero.dart';
 import '../data/models/ruta.dart';
@@ -116,7 +119,18 @@ class _TripSearchScreenState extends ConsumerState<TripSearchScreen> {
                     : const Text('Buscar viajes'),
               ),
               const SizedBox(height: 24),
-              _Results(state: search),
+              _Results(
+                state: search,
+                onTapViaje: (v) {
+                  // Persistir selección de origen/destino en el provider
+                  // para que la pantalla de detalle la use al reservar.
+                  ref.read(compraSeleccionProvider.notifier).setOrigenDestino(
+                        _origen?.id,
+                        _destino?.id,
+                      );
+                  context.push('${AppRoutes.viaje}/${v.id}');
+                },
+              ),
             ],
           );
         },
@@ -200,8 +214,9 @@ class _FechaField extends StatelessWidget {
 // -----------------------------------------------------------------------------
 
 class _Results extends StatelessWidget {
-  const _Results({required this.state});
+  const _Results({required this.state, required this.onTapViaje});
   final TripSearchState state;
+  final void Function(Viaje) onTapViaje;
 
   @override
   Widget build(BuildContext context) {
@@ -221,14 +236,17 @@ class _Results extends StatelessWidget {
       return const _Hint('No hay viajes para los criterios indicados.');
     }
     return Column(
-      children: state.results.map((v) => _ViajeCard(viaje: v)).toList(),
+      children: state.results
+          .map((v) => _ViajeCard(viaje: v, onTap: () => onTapViaje(v)))
+          .toList(),
     );
   }
 }
 
 class _ViajeCard extends StatelessWidget {
-  const _ViajeCard({required this.viaje});
+  const _ViajeCard({required this.viaje, required this.onTap});
   final Viaje viaje;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -240,7 +258,10 @@ class _ViajeCard extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -292,6 +313,7 @@ class _ViajeCard extends StatelessWidget {
                   style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
             ],
           ],
+        ),
         ),
       ),
     );

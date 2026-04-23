@@ -80,6 +80,12 @@ class HomeScreen extends ConsumerWidget {
               icon: const Icon(Icons.search),
               label: const Text('Buscar viaje'),
             ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () => context.push(AppRoutes.boletos),
+              icon: const Icon(Icons.confirmation_number_outlined),
+              label: const Text('Mis boletos'),
+            ),
           ],
         ),
       ),
