@@ -138,9 +138,60 @@ CONVENCIONES DE TRABAJO
 · Dev URLs: web → 127.0.0.1:8000 · android emu → 10.0.2.2:8000.
 
 ================================================================================
+DECISIONES PENDIENTES · IDEAS A FUTURO · DUDAS ABIERTAS
+================================================================================
+Aquí se registra todo lo que surja durante el desarrollo y que NO se implemente
+en el momento, para no perderlo. Se revisa antes de iniciar cada nueva fase.
+
+[DECIDIDO · 2026-04-22]  Relación Vehículo ↔ Conductor
+  Discusión: ¿un vehículo debería estar ligado a un conductor? ¿y si un
+  conductor alquila el vehículo a otro?
+  Decisión: Mantener Vehiculo y Conductor como entidades independientes.
+  La relación vive en Viaje (FK vehiculo + FK conductor + fecha). Esto
+  soporta: mismo vehículo con varios choferes, mismo chofer con varios
+  vehículos, alquileres temporales y mantiene histórico completo.
+  Pendiente en Fase 7 (admin):
+    · Agregar Vehiculo.propietario (FK opcional a User) — informativo.
+    · Crear AsignacionConductorVehiculo(conductor, vehiculo, desde, hasta,
+      estado) para control de flota + validación al crear Viaje.
+    · UI admin para autorizar/revocar choferes por vehículo y rango.
+
+[IDEA]  Capacidad real por tipo de vehículo
+  Hoy capacidad_asientos default = 10. Si en el futuro hay mini-vans 12-15
+  pax, considerar tipo_vehiculo (COMBI_10, MINIVAN_12, BUS_20) y que
+  capacidad se infiera del tipo.
+
+[IDEA]  Tarifas dinámicas / recargos nocturnos
+  TarifaTramo es fija. Podría sumarse TarifaTramoHorario para recargos en
+  horarios pico o nocturnos. Postergar hasta Fase 6.
+
+[IDEA]  Múltiples rutas / sentidos (Huacho → Sayán)
+  Hoy la ruta es unidireccional Sayán → Huacho. Modelar el retorno como
+  una segunda Ruta (y reutilizar paraderos). Validar al activar segunda ruta.
+
+[IDEA]  Notificaciones push
+  Avisar al pasajero "tu viaje sale en 15 min", "el conductor se está
+  acercando al paradero" (Fase 4 + FCM).
+
+[IDEA]  Calificación del conductor / del viaje
+  1-5 estrellas + comentario al terminar el viaje. Fase 4 o 7.
+
+[DUDA]  Política de cancelación/reembolso
+  ¿El pasajero puede cancelar? ¿Cuánto antes? ¿Devolución total/parcial?
+  Definir antes de Fase 5 (pagos reales).
+
+[DUDA]  ¿Un usuario puede ser pasajero Y conductor a la vez?
+  Hoy User.role es único (PASAJERO/CONDUCTOR/ADMIN). Si el dueño-chofer
+  también compra viajes en su tiempo libre, conviene multi-rol (many-to-many
+  con Roles). Revisitar en Fase 4.
+
+[PENDIENTE]  Validar formato teléfono peruano
+  RegisterSerializer acepta cualquier string. Agregar validación +51 9XX
+  XXX XXX (9 dígitos) antes de producción.
+
+================================================================================
 ESTADO ACTUAL (a 2026-04-22)
 ================================================================================
-Último hito: Fase 2.6 en curso (modelos FE + repositorio + controller).
-Siguiente paso inmediato: terminar TripsController, armar la pantalla de búsqueda
-y listado de resultados, luego migrar trips y cargar Viaje de prueba.
+Último hito: Fase 2c completada (UI Flutter de búsqueda de viajes) y pusheada.
+Siguiente paso inmediato: Fase 3 · compra de boletos (reserva, asiento, QR).
 ================================================================================

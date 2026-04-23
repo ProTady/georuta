@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'apps.routes',
     'apps.fleet',
     'apps.trips',
+    'apps.tickets',
 ]
 
 AUTH_USER_MODEL = 'users.User'
