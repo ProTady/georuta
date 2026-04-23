@@ -73,7 +73,8 @@ class _ViajeDetalleScreenState extends ConsumerState<ViajeDetalleScreen> {
         ),
         data: (v) {
           final paraderos = _paraderosDeRuta(rutasAsync.valueOrNull, v.rutaId);
-          final total = _calcularTotal(sel.asientos.length, v.tarifa);
+          final tarifa = v.tarifaPara(sel.origenId, sel.destinoId);
+          final total = _calcularTotal(sel.asientos.length, tarifa);
           return RefreshIndicator(
             onRefresh: () async {
               ref.invalidate(viajeDetalleProvider(widget.viajeId));
@@ -106,7 +107,7 @@ class _ViajeDetalleScreenState extends ConsumerState<ViajeDetalleScreen> {
                 const SizedBox(height: 20),
                 _ResumenCompra(
                   cantidad: sel.asientos.length,
-                  tarifa: v.tarifa,
+                  tarifa: tarifa,
                   total: total,
                 ),
                 if (_error != null) ...[

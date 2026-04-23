@@ -33,10 +33,14 @@ class Boleto {
         rutaNombre: (json['ruta_nombre'] ?? '') as String,
         fechaViaje: DateTime.parse(json['fecha_viaje'] as String),
         horaSalida: DateTime.parse(json['hora_salida'] as String),
-        asientoNumero: json['asiento_numero'] as int,
+        asientoNumero: json['asiento_numero'] is int
+            ? json['asiento_numero'] as int
+            : int.tryParse(json['asiento_numero'].toString()) ?? 0,
         origenNombre: (json['origen_nombre'] ?? '') as String,
         destinoNombre: (json['destino_nombre'] ?? '') as String,
-        precio: (json['precio'] as num).toDouble(),
+        precio: json['precio'] is num
+            ? (json['precio'] as num).toDouble()
+            : double.tryParse(json['precio'].toString()) ?? 0,
         qrToken: json['qr_token'] as String,
         estado: json['estado'] as String,
         fechaEmision: DateTime.parse(json['fecha_emision'] as String),

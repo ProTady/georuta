@@ -45,6 +45,11 @@ class ViajeListSerializer(serializers.ModelSerializer):
     vehiculo_placa = serializers.CharField(source='vehiculo.placa', read_only=True)
     conductor_nombre = serializers.SerializerMethodField()
     tarifa = serializers.SerializerMethodField()
+    asientos_vendidos = serializers.IntegerField(read_only=True)
+    eta_minutos = serializers.SerializerMethodField()
+    origen_actual_nombre = serializers.CharField(
+        source='origen_actual.nombre', read_only=True, default=None
+    )
 
     class Meta:
         model = Viaje
@@ -54,13 +59,21 @@ class ViajeListSerializer(serializers.ModelSerializer):
             'ruta_nombre',
             'fecha_viaje',
             'hora_salida_programada',
+            'abierto_en',
             'capacidad_total',
             'asientos_disponibles',
+            'asientos_vendidos',
+            'min_pasajeros_para_salir',
+            'eta_minutos',
+            'origen_actual_nombre',
             'estado',
             'vehiculo_placa',
             'conductor_nombre',
             'tarifa',
         )
+
+    def get_eta_minutos(self, obj):
+        return obj.eta_minutos()
 
     def get_conductor_nombre(self, obj):
         if obj.conductor and obj.conductor.usuario:

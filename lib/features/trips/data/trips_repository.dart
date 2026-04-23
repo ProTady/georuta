@@ -57,6 +57,31 @@ class TripsRepository {
     }
   }
 
+  /// Fase 4 · pooling: lista de viajes ABIERTOS tomando pasajeros ahora.
+  Future<List<Viaje>> getViajesAbiertos({
+    String? rutaId,
+    String? origenId,
+    String? destinoId,
+  }) async {
+    final params = <String, dynamic>{};
+    if (rutaId != null) params['ruta_id'] = rutaId;
+    if (origenId != null) params['origen_id'] = origenId;
+    if (destinoId != null) params['destino_id'] = destinoId;
+    try {
+      final res = await _api.dio.get(
+        '/api/trips/abiertos/',
+        queryParameters: params,
+      );
+      final data = res.data;
+      final list = data is List ? data : (data['results'] as List? ?? const []);
+      return list
+          .map((e) => Viaje.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } on DioException catch (e) {
+      throw TripsException(_parseError(e));
+    }
+  }
+
   String _parseError(DioException e) {
     final d = e.response?.data;
     if (d is Map && d['detail'] is String) return d['detail'] as String;

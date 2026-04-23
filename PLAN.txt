@@ -65,16 +65,65 @@ FASE 3 · COMPRA DE BOLETOS                                                  [ ]
 
 
 ================================================================================
-FASE 4 · GPS Y APP DEL CONDUCTOR                                            [ ]
+FASE 4 · DISPONIBILIDAD POR DEMANDA + ETA (PIVOT 2026-04-23)                [~]
 ================================================================================
-[ ] 4.1  (BE) App tracking: PosicionVehiculo (viaje, lat, lon, velocidad, ts)
-[ ] 4.2  (BE) Endpoint POST /api/tracking/ping/  (solo rol CONDUCTOR)
-[ ] 4.3  (BE) GET /api/viajes/{id}/tracking/  (última posición + histórico corto)
-[ ] 4.4  (FE) Gate por rol: HomePasajero / HomeConductor
-[ ] 4.5  (FE-Conductor) Lista de mis viajes asignados
-[ ] 4.6  (FE-Conductor) Iniciar viaje → envío periódico de geolocator (cada 10 s)
-[ ] 4.7  (FE-Conductor) Escáner QR para validar boletos (mobile_scanner)
-[ ] 4.8  (FE-Pasajero) Mapa en vivo del viaje con flutter_map + marker animado
+Modelo: el conductor se pone "disponible" en un paradero/ruta. Eso abre un
+Viaje ABIERTO con 0 pasajeros. Los pasajeros ven la lista de carros abiertos
+con su porcentaje de llenado y un ETA estimado ("sale en ~X min"). Eligen
+carro + asiento. El viaje sale cuando se llena o cuando el conductor cierra.
+
+[x] 4.0  (DOC) Pivot documentado (ver bloque DECISIONES: modelo pooling).
+[ ] 4.1  (BE) Viaje.Estado: agregar ABIERTO (nuevo default del flujo demanda).
+         PROGRAMADO queda deprecated para compat con admin; flujo nuevo usa
+         ABIERTO → EN_CURSO → FINALIZADO/CANCELADO.
+[ ] 4.2  (BE) Campos nuevos en Viaje:
+           · origen_actual (Paradero) — dónde está el carro esperando
+           · min_pasajeros_para_salir (int, default 60% capacidad)
+           · abierto_en (datetime) — cuando el conductor se puso disponible
+[ ] 4.3  (BE) Endpoint POST /api/driver/viajes/abrir/
+         body: { ruta_id, vehiculo_id, origen_paradero_id }
+         Valida: rol CONDUCTOR, no tiene otro viaje ABIERTO/EN_CURSO, vehículo
+         libre. Crea Viaje{ABIERTO, conductor=yo, hora_salida_programada=now}.
+[ ] 4.4  (BE) Endpoint POST /api/driver/viajes/<id>/salir/  → EN_CURSO
+[ ] 4.5  (BE) Endpoint POST /api/driver/viajes/<id>/cancelar/  → CANCELADO
+         (libera reservas PENDIENTE y reembolsa boletos si Fase 5 activa).
+[ ] 4.6  (BE) GET /api/trips/abiertos/?ruta_id=&origen=&destino=
+         Devuelve viajes ABIERTO de esa ruta con:
+           · asientos_vendidos / capacidad
+           · eta_minutos (heurística v1: ver 4.7)
+           · tarifa para el tramo origen→destino
+[ ] 4.7  (BE) Heurística ETA v1 (sin historial aún):
+           eta = max(0, (min_para_salir - vendidos) * minutos_promedio_asiento)
+         donde minutos_promedio_asiento arranca en 3 min y luego se recalcula
+         por ruta/franja horaria (5-9, 9-17, 17-22).
+[ ] 4.8  (BE) App tracking: PosicionVehiculo (viaje, lat, lon, velocidad, ts)
+[ ] 4.9  (BE) POST /api/tracking/ping/ (rol CONDUCTOR)
+[ ] 4.10 (BE) GET /api/viajes/<id>/tracking/ (última + histórico corto)
+[ ] 4.11 (FE) Gate por rol: HomePasajero / HomeConductor
+[ ] 4.12 (FE-Conductor) Pantalla "Ponerme disponible" — dropdown ruta + paradero
+         de origen + vehículo asignado → botón "Abrir viaje".
+[ ] 4.13 (FE-Conductor) Pantalla de viaje activo: pasajeros confirmados,
+         asientos restantes, botón "Salir ahora" y "Cancelar".
+[ ] 4.14 (FE-Conductor) Envío periódico de geolocator (cada 10 s mientras
+         EN_CURSO) + escáner QR (mobile_scanner) al subir pasajeros.
+[ ] 4.15 (FE-Pasajero) Buscar reemplaza fecha/hora por "Ahora": lista de
+         carros abiertos con llenado y ETA; ordenados por ETA ascendente.
+[ ] 4.16 (FE-Pasajero) Mapa en vivo (flutter_map + marker animado) cuando el
+         viaje está EN_CURSO.
+
+---- Layout visual configurable por vehículo (sub-bloque 4.L) ----
+[x] 4.L.1 (BE) Vehiculo.layout JSONField {filas, columnas, celdas[[...]]}
+          Cada celda: null | {"tipo":"CHOFER"} | {"tipo":"ASIENTO","numero":N}.
+[x] 4.L.2 (BE) Signal de creación de Asientos respeta el layout: si hay
+          layout, crea sólo los asientos listados en él (y con ese número);
+          si no hay layout, fallback a 1..capacidad_asientos.
+[ ] 4.L.3 (BE) Validación al guardar layout: capacidad_asientos = número de
+          celdas tipo ASIENTO; números únicos; ≥1 celda CHOFER.
+[ ] 4.L.4 (FE-Conductor) Editor visual: grilla filas×columnas con tap para
+          alternar vacío / chofer / asiento numerado. Auto-numera al añadir.
+          Guarda en /api/fleet/vehiculos/<id>/layout/.
+[ ] 4.L.5 (FE-Pasajero) La grilla de selección de asientos usa el layout
+          cuando está disponible (mismo dibujo que el editor del conductor).
 
 
 ================================================================================
@@ -143,6 +192,39 @@ DECISIONES PENDIENTES · IDEAS A FUTURO · DUDAS ABIERTAS
 Aquí se registra todo lo que surja durante el desarrollo y que NO se implemente
 en el momento, para no perderlo. Se revisa antes de iniciar cada nueva fase.
 
+[DECIDIDO · 2026-04-23]  PIVOT a modelo de pooling por demanda
+  Contexto real del colectivo Sayán–Huacho: los carros no salen por horario
+  fijo sino cuando se llenan (modelo "combi peruana"). El pasajero quiere
+  saber cuál carro sale antes, no a qué hora programada.
+
+  Decisión: abandonar el modelo "empresa programa viajes con horario fijo"
+  y adoptar modelo por demanda:
+    · El CONDUCTOR es quien "abre" un viaje poniéndose disponible en un
+      paradero de origen. Eso crea Viaje{ABIERTO}.
+    · El PASAJERO ve la lista de carros ABIERTOS en su ruta con % de
+      llenado y ETA estimado, elige carro y asiento, paga.
+    · El viaje sale cuando (a) se llena, (b) se alcanza el mínimo y el
+      conductor decide salir, o (c) vence el tiempo máximo de espera.
+    · El OPERADOR/ADMIN gestiona flota, rutas, tarifas, habilitaciones —
+      pero NO programa viajes.
+
+  Horario queda como entidad legada (compat con admin), no usada en el
+  flujo nuevo. Puede reutilizarse después como "franja sugerida" para
+  orientar al conductor sobre cuándo ponerse disponible.
+
+  Capa futura (Fase 8+): recojo puerta-a-puerta (desvíos tipo Uber Pool);
+  por ahora semi-pooling paradero→paradero.
+
+  Ideas anexas a validar luego:
+    · Precio dinámico en hora pica (+20% si ETA < 5 min).
+    · Prioridad/recargo por asiento preferente (copiloto, ventana).
+    · Señal de demanda: si N pasajeros solicitan ruta sin carro abierto,
+      notificar a conductores cercanos ("hay demanda en Sayán").
+    · LayoutVehiculo: plano visual real del carro (filas × columnas con
+      celdas CHOFER/ASIENTO_N) en vez de sólo capacidad numérica. Ver
+      Fase 7 UX. Ejemplos ya mapeados: 10 asientos (chofer+1 | 3 | 3 | 3),
+      6 asientos (chofer+1 | 3 | 2), 4 asientos (chofer+1 | 3).
+
 [DECIDIDO · 2026-04-22]  Relación Vehículo ↔ Conductor
   Discusión: ¿un vehículo debería estar ligado a un conductor? ¿y si un
   conductor alquila el vehículo a otro?
@@ -198,6 +280,29 @@ en el momento, para no perderlo. Se revisa antes de iniciar cada nueva fase.
   viaje o el endpoint de confirmar. Agregar management command o celery beat
   que corra cada minuto y limpie reservas vencidas.
 
+[PENDIENTE · 2026-04-23]  Pasajero no ve el layout real del vehículo
+  La grilla de selección de asientos en viaje_detalle_screen (_AsientosGrid)
+  dibuja un GridView uniforme de 4 columnas con los asientos 1..N. Aunque el
+  conductor ya puede definir un layout visual (4 filas × 3 columnas con chofer,
+  vacíos y asientos numerados), el pasajero no lo ve.
+  TODO: exponer Vehiculo.layout en el detalle del viaje (ViajeListSerializer
+  o endpoint /api/trips/viajes/<id>/) y en Flutter renderizar la misma grilla
+  que el editor del conductor (chofer como celda distinta, vacíos intercalados,
+  números según layout). Mantener fallback a grilla 4-col cuando no hay layout.
+  Corresponde a 4.L.5 de Fase 4.
+
+[PENDIENTE · 2026-04-23]  Tarifa N/D al reservar en flujo pooling
+  Al abrir un viaje desde el panel del conductor en la ruta Sayán→Huacho y
+  entrar al detalle como pasajero, la tarifa vuelve a salir N/D y Total S/ —.
+  Causa probable: la ruta Sayán→Huacho no tiene TarifaTramo con estado ACTIVA
+  para los pares (origen, destino) válidos; el reset_demo sólo siembra tarifas
+  en la ruta inversa Huacho→Sayán.
+  TODO: (a) completar reset_demo para también sembrar las 6 tarifas S/8 en la
+  ruta Sayán→Huacho, o (b) migrar el seed_georuta a un único comando que
+  garantice tarifas en ambos sentidos, o (c) mover el cálculo de tarifa al
+  modelo como cascade (ej. si no hay TarifaTramo puntual, usar tarifa_base
+  del horario o un default por ruta).
+
 [PENDIENTE]  Validar formato teléfono peruano
   RegisterSerializer acepta cualquier string. Agregar validación +51 9XX
   XXX XXX (9 dígitos) antes de producción.
@@ -205,6 +310,10 @@ en el momento, para no perderlo. Se revisa antes de iniciar cada nueva fase.
 ================================================================================
 ESTADO ACTUAL (a 2026-04-22)
 ================================================================================
-Último hito: Fase 2c completada (UI Flutter de búsqueda de viajes) y pusheada.
-Siguiente paso inmediato: Fase 3 · compra de boletos (reserva, asiento, QR).
+Último hito: Fase 3 (a+b+c) completada. Compra de boletos end-to-end funciona
+desde Flutter. PIVOT documentado (2026-04-23): se adopta modelo pooling por
+demanda — el conductor abre viajes al ponerse disponible, el pasajero elige
+por ETA.
+Siguiente paso inmediato: Fase 4.1–4.7 · pivot backend (estado ABIERTO +
+endpoints driver-disponible + lista con ETA).
 ================================================================================

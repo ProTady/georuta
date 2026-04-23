@@ -76,9 +76,15 @@ class HomeScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
+              onPressed: () => context.push(AppRoutes.ahora),
+              icon: const Icon(Icons.flash_on),
+              label: const Text('Viajes disponibles ahora'),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
               onPressed: () => context.push(AppRoutes.search),
               icon: const Icon(Icons.search),
-              label: const Text('Buscar viaje'),
+              label: const Text('Buscar por fecha (legado)'),
             ),
             const SizedBox(height: 12),
             OutlinedButton.icon(

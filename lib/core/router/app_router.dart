@@ -5,6 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/application/auth_controller.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
+import '../../features/driver/data/models/vehiculo.dart';
+import '../../features/driver/presentation/driver_home_screen.dart';
+import '../../features/driver/presentation/driver_viaje_activo_screen.dart';
+import '../../features/driver/presentation/layout_editor_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 import '../../features/tickets/data/models/boleto.dart';
@@ -14,6 +18,7 @@ import '../../features/tickets/presentation/confirmar_reserva_screen.dart';
 import '../../features/tickets/presentation/mis_boletos_screen.dart';
 import '../../features/tickets/presentation/viaje_detalle_screen.dart';
 import '../../features/trips/presentation/trip_search_screen.dart';
+import '../../features/trips/presentation/viajes_ahora_screen.dart';
 
 class AppRoutes {
   AppRoutes._();
@@ -22,11 +27,15 @@ class AppRoutes {
   static const register = '/register';
   static const home = '/home';
   static const search = '/search';
+  static const ahora = '/ahora';
+  static const driverHome = '/driver';
   // Rutas parametrizadas: se usan como "$viaje/<id>", "$reserva/<id>", "$boleto/<id>"
   static const viaje = '/viaje';
   static const reserva = '/reserva';
   static const boletos = '/boletos';
   static const boleto = '/boleto';
+  static const driverViaje = '/driver/viaje';
+  static const driverLayout = '/driver/layout';
 }
 
 /// Refresca go_router cuando cambia el AuthState en Riverpod.
@@ -51,9 +60,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
 
       if (auth is AuthAuthenticated) {
+        final esConductor = auth.user.role == 'CONDUCTOR';
         if (loc == AppRoutes.splash ||
             loc == AppRoutes.login ||
             loc == AppRoutes.register) {
+          return esConductor ? AppRoutes.driverHome : AppRoutes.home;
+        }
+        // Si un pasajero intenta entrar a /driver lo mandamos a /home.
+        if (!esConductor && loc.startsWith('/driver')) {
           return AppRoutes.home;
         }
         return null;
@@ -82,6 +96,30 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.search,
         builder: (ctx, state) => const TripSearchScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.ahora,
+        builder: (ctx, state) => const ViajesAhoraScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.driverHome,
+        builder: (ctx, state) => const DriverHomeScreen(),
+      ),
+      GoRoute(
+        path: '${AppRoutes.driverViaje}/:id',
+        builder: (ctx, state) => DriverViajeActivoScreen(
+          viajeId: state.pathParameters['id']!,
+        ),
+      ),
+      GoRoute(
+        path: '${AppRoutes.driverLayout}/:id',
+        builder: (ctx, state) {
+          final extra = state.extra;
+          return LayoutEditorScreen(
+            vehiculoId: state.pathParameters['id']!,
+            inicial: extra is Vehiculo ? extra : null,
+          );
+        },
       ),
       GoRoute(
         path: '${AppRoutes.viaje}/:id',

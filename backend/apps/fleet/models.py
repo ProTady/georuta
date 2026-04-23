@@ -18,6 +18,34 @@ class Vehiculo(models.Model):
     capacidad_asientos = models.PositiveIntegerField(default=10)
     anio = models.PositiveIntegerField(null=True, blank=True)
     estado = models.CharField(max_length=20, choices=Estado.choices, default=Estado.ACTIVO)
+    # Layout visual del vehículo. Estructura:
+    #   {
+    #     "filas": 4, "columnas": 3,
+    #     "celdas": [
+    #       [null, {"tipo":"CHOFER"}, {"tipo":"ASIENTO","numero":1}],
+    #       [{"tipo":"ASIENTO","numero":2}, {"tipo":"ASIENTO","numero":3},
+    #        {"tipo":"ASIENTO","numero":4}],
+    #       ...
+    #     ]
+    #   }
+    # Si es null, se asume disposición lineal 1..capacidad_asientos.
+    layout = models.JSONField(null=True, blank=True)
+
+    def asientos_desde_layout(self):
+        """Devuelve la lista de números de asiento tal como aparecen en el
+        layout (ordenada). Si no hay layout, devuelve range(1, cap+1).
+        """
+        if not self.layout:
+            return list(range(1, (self.capacidad_asientos or 0) + 1))
+        numeros = []
+        for fila in (self.layout.get('celdas') or []):
+            for celda in fila:
+                if isinstance(celda, dict) and celda.get('tipo') == 'ASIENTO':
+                    n = celda.get('numero')
+                    if isinstance(n, int):
+                        numeros.append(n)
+        numeros.sort()
+        return numeros
 
     class Meta:
         db_table = 'vehiculos'

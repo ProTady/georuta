@@ -8,7 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.routes.models import Paradero, RutaParadero
+from apps.routes.models import Paradero, RutaParadero, TarifaTramo
 from apps.trips.models import Viaje
 from apps.trips.serializers import ViajeListSerializer
 
@@ -75,8 +75,26 @@ class ViajeDetalleView(APIView):
             },
         ).data
 
-        viaje_data = ViajeListSerializer(viaje).data
+        # Permitir origen/destino via query para calcular tarifa puntual
+        # y además devolver todas las tarifas del tramo para que el front
+        # haga lookup sin refetch.
+        origen_id = request.query_params.get('origen')
+        destino_id = request.query_params.get('destino')
+        viaje_data = ViajeListSerializer(
+            viaje,
+            context={'origen_id': origen_id, 'destino_id': destino_id},
+        ).data
         viaje_data['asientos'] = asientos_data
+        viaje_data['tarifas'] = [
+            {
+                'origen_id': str(t.paradero_origen_id),
+                'destino_id': str(t.paradero_destino_id),
+                'precio': str(t.precio),
+            }
+            for t in TarifaTramo.objects.filter(
+                ruta=viaje.ruta, estado='ACTIVA',
+            )
+        ]
         return Response(viaje_data)
 
 

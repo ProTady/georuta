@@ -1,3 +1,16 @@
+double _toDouble(dynamic v) {
+  if (v == null) return 0;
+  if (v is num) return v.toDouble();
+  return double.tryParse(v.toString()) ?? 0;
+}
+
+int _toInt(dynamic v) {
+  if (v == null) return 0;
+  if (v is int) return v;
+  if (v is num) return v.toInt();
+  return int.tryParse(v.toString()) ?? 0;
+}
+
 class ReservaItem {
   final String asientoId;
   final int asientoNumero;
@@ -11,8 +24,8 @@ class ReservaItem {
 
   factory ReservaItem.fromJson(Map<String, dynamic> json) => ReservaItem(
         asientoId: json['asiento'].toString(),
-        asientoNumero: json['asiento_numero'] as int,
-        precio: (json['precio'] as num).toDouble(),
+        asientoNumero: _toInt(json['asiento_numero']),
+        precio: _toDouble(json['precio']),
       );
 }
 
@@ -39,9 +52,9 @@ class Reserva {
         id: json['id'].toString(),
         viajeId: json['viaje'].toString(),
         estado: json['estado'] as String,
-        total: (json['total'] as num).toDouble(),
+        total: _toDouble(json['total']),
         expiraEn: DateTime.parse(json['expira_en'] as String),
-        segundosRestantes: (json['segundos_restantes'] ?? 0) as int,
+        segundosRestantes: _toInt(json['segundos_restantes']),
         items: ((json['items'] as List?) ?? const [])
             .map((e) => ReservaItem.fromJson(e as Map<String, dynamic>))
             .toList(),

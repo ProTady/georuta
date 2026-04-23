@@ -31,6 +31,23 @@ class Asiento {
       );
 }
 
+class TarifaTramo {
+  final String origenId;
+  final String destinoId;
+  final double precio;
+  const TarifaTramo({
+    required this.origenId,
+    required this.destinoId,
+    required this.precio,
+  });
+
+  factory TarifaTramo.fromJson(Map<String, dynamic> json) => TarifaTramo(
+        origenId: json['origen_id'].toString(),
+        destinoId: json['destino_id'].toString(),
+        precio: double.tryParse(json['precio'].toString()) ?? 0,
+      );
+}
+
 /// Viaje con sus asientos (respuesta de /api/trips/viajes/<id>/).
 class ViajeDetalle {
   final String id;
@@ -45,6 +62,7 @@ class ViajeDetalle {
   final String? conductorNombre;
   final double? tarifa;
   final List<Asiento> asientos;
+  final List<TarifaTramo> tarifas;
 
   const ViajeDetalle({
     required this.id,
@@ -59,7 +77,17 @@ class ViajeDetalle {
     this.vehiculoPlaca,
     this.conductorNombre,
     this.tarifa,
+    this.tarifas = const [],
   });
+
+  /// Busca el precio para el tramo origen→destino.
+  double? tarifaPara(String? origenId, String? destinoId) {
+    if (origenId == null || destinoId == null) return tarifa;
+    for (final t in tarifas) {
+      if (t.origenId == origenId && t.destinoId == destinoId) return t.precio;
+    }
+    return tarifa;
+  }
 
   factory ViajeDetalle.fromJson(Map<String, dynamic> json) => ViajeDetalle(
         id: json['id'].toString(),
@@ -76,6 +104,9 @@ class ViajeDetalle {
         tarifa: _asDouble(json['tarifa']),
         asientos: ((json['asientos'] as List?) ?? const [])
             .map((e) => Asiento.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        tarifas: ((json['tarifas'] as List?) ?? const [])
+            .map((e) => TarifaTramo.fromJson(e as Map<String, dynamic>))
             .toList(),
       );
 
